@@ -1,0 +1,41 @@
+const FEATURES = [
+  {
+    icon: 'view_in_ar',
+    title: 'Interactive 3D Walkthrough',
+    description: 'Immersive, browser-based exploration.',
+  },
+  {
+    icon: 'movie',
+    title: 'Cinematic Video Hero',
+    description: 'High-fidelity animated sequences.',
+  },
+  {
+    icon: 'smartphone',
+    title: 'Mobile-Ready in Seconds',
+    description: 'Optimized for every device.',
+  },
+]
+
+function FeatureStrip() {
+  return (
+    <section className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
+      <div className="grid grid-cols-1 gap-gutter border-t border-outline-variant/20 pt-16 md:grid-cols-3">
+        {FEATURES.map((feature) => (
+          <div key={feature.title} className="flex flex-col items-start gap-4">
+            <span className="material-symbols-outlined text-3xl text-on-surface-variant">
+              {feature.icon}
+            </span>
+            <h3 className="font-body-lg text-body-lg text-on-surface">
+              {feature.title}
+            </h3>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              {feature.description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export default FeatureStrip
