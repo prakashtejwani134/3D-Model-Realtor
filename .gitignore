@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Unused source asset (118MB, not referenced by the app — see public/models/studio-noir-chair.glb)
+public/models/studio-noir-chair-raw.glb
