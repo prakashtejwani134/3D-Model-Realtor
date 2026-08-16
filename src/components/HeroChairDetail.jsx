@@ -4,6 +4,7 @@ import { Center, PerspectiveCamera, useGLTF } from '@react-three/drei'
 import { ACESFilmicToneMapping, MathUtils } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useInViewport } from '../hooks/useInViewport'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -94,6 +95,7 @@ function SceneLights() {
 export default function HeroChairDetail() {
   const wrapperRef = useRef(null)
   const scrollProgress = useRef(0)
+  const isVisible = useInViewport(wrapperRef)
 
   useEffect(() => {
     const trigger = ScrollTrigger.create({
@@ -114,6 +116,7 @@ export default function HeroChairDetail() {
   return (
     <div ref={wrapperRef} className="relative h-screen w-full overflow-hidden bg-[#131313]">
       <Canvas
+        frameloop={isVisible ? 'always' : 'never'}
         dpr={[1, 2]}
         gl={{
           antialias: true,

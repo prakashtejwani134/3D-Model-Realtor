@@ -6,6 +6,7 @@ import type { Group, PerspectiveCamera as ThreePerspectiveCamera } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import { useInViewport } from '../hooks/useInViewport'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -125,6 +126,7 @@ function SceneLights() {
 export default function HeroScene() {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const scrollProgress = useRef(0)
+  const isVisible = useInViewport(wrapperRef)
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -158,6 +160,7 @@ export default function HeroScene() {
   return (
     <div ref={wrapperRef} className="relative h-screen w-full overflow-hidden bg-[#131313]">
       <Canvas
+        frameloop={isVisible ? 'always' : 'never'}
         dpr={[1, 2]}
         gl={{
           antialias: true,
