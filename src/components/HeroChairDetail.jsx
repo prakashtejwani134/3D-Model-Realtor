@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Center, PerspectiveCamera, useGLTF } from '@react-three/drei'
-import { ACESFilmicToneMapping, MathUtils } from 'three'
+import { ACESFilmicToneMapping, DoubleSide, MathUtils } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useInViewport } from '../hooks/useInViewport'
@@ -51,6 +51,29 @@ function CameraRig({ scrollProgress }) {
 
 function ChairModel() {
   const { scene } = useGLTF(CHAIR_MODEL_PATH)
+
+  useEffect(() => {
+    const meshes = []
+
+    scene.traverse((child) => {
+      if (!child.isMesh) return
+
+      const materials = Array.isArray(child.material) ? child.material : [child.material]
+      materials.forEach((mat) => {
+        if (mat) mat.side = DoubleSide
+      })
+
+      meshes.push({
+        name: child.name || '(unnamed)',
+        vertices: child.geometry?.attributes?.position?.count ?? 0,
+        visible: child.visible,
+        materials: materials.map((mat) => mat?.name || '(unnamed)'),
+      })
+    })
+
+    console.log(`[HeroChairDetail] ${meshes.length} mesh(es) in loaded GLB scene graph:`)
+    console.table(meshes)
+  }, [scene])
 
   return (
     <Center position={[0, 0, 0]}>
