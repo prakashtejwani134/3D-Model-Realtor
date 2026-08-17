@@ -13,10 +13,14 @@ const CHAMPAGNE_GOLD = '#dac769'
 const CHARCOAL = '#131313'
 
 // Camera framing as the section enters the viewport: pulled-back establishing
-// angle at progress 0, tight product-shot framing by progress 1.
-const CAMERA_START = { x: 1.8, y: 1.2, z: 6.5 }
-const CAMERA_END = { x: 0.6, y: 0.75, z: 3 }
-const LOOK_TARGET = [0, 0.4, 0]
+// angle at progress 0, tight product-shot framing by progress 1. Both keyframes
+// sit high and close on purpose — the chair's leg geometry is a truncated stub
+// (a Meshy export limitation, not fixable here), so the crop favors the seat,
+// backrest, and upper armrest/frame detail and keeps the leg area at or past
+// the bottom edge rather than centered in frame.
+const CAMERA_START = { x: 1.6, y: 1.35, z: 4.6 }
+const CAMERA_END = { x: 0.5, y: 0.95, z: 2.15 }
+const LOOK_TARGET = [0, 0.5, 0]
 
 /**
  * Dollies the camera in as the section's own scroll progress advances from
@@ -41,7 +45,7 @@ function CameraRig({ scrollProgress }) {
     <PerspectiveCamera
       ref={cameraRef}
       makeDefault
-      fov={32}
+      fov={28}
       near={0.1}
       far={50}
       position={[CAMERA_START.x, CAMERA_START.y, CAMERA_START.z]}
