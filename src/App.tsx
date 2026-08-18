@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import ScrollHero from './components/ScrollHero'
-import Hero from './components/Hero'
 import FeatureStrip from './components/FeatureStrip'
 import CaseStudy from './components/CaseStudy'
 import Pricing from './components/Pricing'
@@ -26,7 +25,6 @@ function App() {
       <Header />
       <ScrollHero />
       <main>
-        <Hero />
         <FeatureStrip />
         <CaseStudy />
         <Pricing />

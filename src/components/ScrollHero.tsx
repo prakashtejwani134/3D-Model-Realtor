@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { scrollToSection } from '../hooks/useSmoothScroll'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -249,6 +250,13 @@ export default function ScrollHero() {
         <p className="font-display-lg-mobile mt-4 max-w-2xl text-xl text-on-surface md:text-3xl">
           A quiet walk through light and material.
         </p>
+        <button
+          type="button"
+          onClick={() => scrollToSection('contact')}
+          className="btn-primary font-label-caps text-label-caps mt-6 px-6 py-3 uppercase tracking-[0.15em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary-fixed"
+        >
+          Request a Demo Tour
+        </button>
       </div>
     </section>
   )

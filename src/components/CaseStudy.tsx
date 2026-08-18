@@ -1,3 +1,6 @@
+// Placeholder stock photo — doesn't match ScrollHero's bespoke Higgsfield
+// grade. Content debt: swap for real project photography/renders when
+// available, not a code fix.
 const CASE_STUDY_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBOby5da9GAX2oaLOFCCmv4sy3hFldYFDLdf_enNilYu0382WoRWPPeOBGUsk0RM5zH9ZhpLPz_5QrY6VQCWxKgvU5g9dGZuwVt2JyTp2ctf8pfWhkpHfDvjzYgrs_npcUBL5i4Q_o7VY1AnsbybvXdDJryicOibF3QWJkNVHi8CrEidxHpq59rypBWlKOd4Qw8Lu0GKGIgKpca_rjrsn7N0sf47xvUwyGXNHCELJjbxoNhaRKPCrvR'
 
