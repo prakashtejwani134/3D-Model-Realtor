@@ -49,7 +49,7 @@ function Pricing() {
   return (
     <section id="pricing" className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
       <div className="mb-16 text-center">
-        <h2 className="font-headline-md text-headline-md mb-4 text-on-surface">
+        <h2 className="font-headline-lg text-headline-md mb-4 text-on-surface md:text-headline-lg">
           Investment
         </h2>
         <p className="font-body-md text-body-md mx-auto max-w-xl text-on-surface-variant">

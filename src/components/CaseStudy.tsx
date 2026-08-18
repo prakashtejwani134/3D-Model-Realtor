@@ -19,7 +19,7 @@ function CaseStudy() {
           <span className="font-label-caps text-label-caps uppercase text-tertiary-fixed">
             Featured Project
           </span>
-          <h2 className="font-headline-lg text-4xl leading-tight text-on-surface md:text-headline-lg">
+          <h2 className="font-headline-lg text-headline-md text-on-surface md:text-headline-lg">
             Flagship Villa
             <br />
             Dubai Hills

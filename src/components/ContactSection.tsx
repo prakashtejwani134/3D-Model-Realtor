@@ -7,7 +7,7 @@ function ContactSection() {
     <section id="contact" className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
       <div className="grid grid-cols-1 items-start gap-gutter md:grid-cols-2">
         <div className="flex flex-col gap-8 pr-0 md:pr-16">
-          <h2 className="font-headline-lg text-4xl leading-tight text-on-surface md:text-headline-lg">
+          <h2 className="font-headline-lg text-headline-md text-on-surface md:text-headline-lg">
             Initiate a Dialogue.
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant">
