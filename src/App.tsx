@@ -1,6 +1,7 @@
 import Header from './components/Header'
 import HeroScene from './components/HeroScene'
 import Hero from './components/Hero'
+import HeroVideoInterlude from './components/HeroVideoInterlude'
 import HeroChairDetail from './components/HeroChairDetail'
 import FeatureStrip from './components/FeatureStrip'
 import CaseStudy from './components/CaseStudy'
@@ -17,6 +18,7 @@ function App() {
         <Hero />
         <FeatureStrip />
         <CaseStudy />
+        <HeroVideoInterlude />
         <HeroChairDetail />
         <Pricing />
         <ContactSection />
