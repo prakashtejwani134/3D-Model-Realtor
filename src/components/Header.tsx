@@ -2,7 +2,10 @@ const NAV_LINKS = ['Portfolio', 'Services', 'Pricing', 'Contact']
 
 function Header() {
   return (
-    <nav className="fixed top-0 z-50 flex w-full max-w-container-max items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-margin-mobile py-6 backdrop-blur-xl md:px-margin-desktop mx-auto left-0 right-0">
+    <nav
+      id="site-header"
+      className="fixed top-0 z-50 flex w-full max-w-container-max items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-margin-mobile py-6 backdrop-blur-xl md:px-margin-desktop mx-auto left-0 right-0"
+    >
       <a
         href="#"
         className="font-headline-md text-headline-md tracking-tighter text-on-surface"
