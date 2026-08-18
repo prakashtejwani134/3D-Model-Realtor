@@ -1,6 +1,19 @@
-const NAV_LINKS = ['Portfolio', 'Services', 'Pricing', 'Contact']
+import { scrollToSection } from '../hooks/useSmoothScroll'
+
+const NAV_LINKS = [
+  { label: 'Pricing', sectionId: 'pricing' },
+  { label: 'Contact', sectionId: 'contact' },
+]
+
+const FOCUS_RING =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary-fixed'
 
 function Header() {
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    event.preventDefault()
+    scrollToSection(sectionId)
+  }
+
   return (
     <nav
       id="site-header"
@@ -15,17 +28,19 @@ function Header() {
       <div className="hidden items-center gap-8 md:flex">
         {NAV_LINKS.map((link) => (
           <a
-            key={link}
-            href="#"
-            className="font-label-caps text-label-caps uppercase text-on-surface-variant transition-colors hover:text-on-surface"
+            key={link.sectionId}
+            href={`#${link.sectionId}`}
+            onClick={(event) => handleNavClick(event, link.sectionId)}
+            className={`font-label-caps text-label-caps uppercase text-on-surface-variant transition-colors hover:text-on-surface ${FOCUS_RING}`}
           >
-            {link}
+            {link.label}
           </a>
         ))}
       </div>
       <button
         type="button"
-        className="font-label-caps text-label-caps border border-outline-variant/20 px-6 py-3 text-primary transition-all duration-300 hover:bg-on-surface hover:text-background active:scale-95 active:opacity-80"
+        onClick={() => scrollToSection('contact')}
+        className={`font-label-caps text-label-caps border border-outline-variant/20 px-6 py-3 text-primary transition-all duration-300 hover:bg-on-surface hover:text-background active:scale-95 active:opacity-80 ${FOCUS_RING}`}
       >
         DEMO TOUR
       </button>

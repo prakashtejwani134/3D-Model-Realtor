@@ -22,7 +22,10 @@ function FeatureStrip() {
       <div className="grid grid-cols-1 gap-gutter border-t border-outline-variant/20 pt-16 md:grid-cols-3">
         {FEATURES.map((feature) => (
           <div key={feature.title} className="flex flex-col items-start gap-4">
-            <span className="material-symbols-outlined text-3xl text-on-surface-variant">
+            <span
+              className="material-symbols-outlined text-4xl text-tertiary-fixed"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
               {feature.icon}
             </span>
             <h3 className="font-body-lg text-body-lg text-on-surface">

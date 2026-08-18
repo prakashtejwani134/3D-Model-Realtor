@@ -47,7 +47,7 @@ const TIERS: Tier[] = [
 
 function Pricing() {
   return (
-    <section className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
+    <section id="pricing" className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
       <div className="mb-16 text-center">
         <h2 className="font-headline-md text-headline-md mb-4 text-on-surface">
           Investment
