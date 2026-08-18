@@ -29,6 +29,18 @@ const HEADER_SELECTOR = '#site-header'
 const HEADER_HIDE_Y = -16
 const HEADER_HIDE_DURATION = 0.4
 const HEADER_REVEAL_DURATION = 0.5
+// Ignores sub-pixel/floating-point progress noise right at the top-of-page
+// boundary (e.g. from a ScrollTrigger.refresh() on window resize) so the
+// header-hide check below only fires on genuine scroll movement, not jitter.
+const HEADER_HIDE_EPSILON = 0.002
+
+// Minimum change in target video time (seconds) before we actually issue a
+// seek. Lenis's RAF loop can drive onUpdate up to ~60x/sec; seeking a
+// compressed video that often is expensive (each seek decodes from the
+// nearest keyframe) and was enough to freeze the tab during smooth-scroll
+// testing. ~1/24s matches roughly one video frame, so the scrub still reads
+// as continuous while cutting redundant seeks by an order of magnitude.
+const MIN_SEEK_DELTA = 1 / 24
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
@@ -89,6 +101,11 @@ export default function HeroVideoInterlude() {
       })
     }
 
+    // Tracks the previous frame's progress so we can detect "just started
+    // scrolling forward from the very top of the page" ourselves (see below)
+    // instead of relying on ScrollTrigger's onEnter for it.
+    let prevProgress = 0
+
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: wrapper,
@@ -101,18 +118,34 @@ export default function HeroVideoInterlude() {
         // returns with a deliberate eased tween — decoupled from scroll
         // speed on purpose so a fast scroll doesn't make it "pop" back in —
         // once the section is actually left, in either direction.
-        onEnter: hideHeader,
+        //
+        // Only onLeave/onEnterBack are wired to ScrollTrigger's own
+        // callbacks. onEnter is deliberately NOT used: this pin's "top top"
+        // start coincides exactly with scrollY 0 (Header is position:fixed
+        // and out of document flow, so the video section sits at the very
+        // top of the page), and ScrollTrigger fires onEnter immediately at
+        // creation whenever the current scroll position already satisfies
+        // the start condition — which it always does here on page load.
+        // That hid the header before the user ever scrolled. The forward
+        // "just left the very top" transition is instead detected below,
+        // from real progress deltas, so it only fires once scrolling
+        // actually happens.
         onLeave: revealHeader,
         onEnterBack: revealHeader,
         onUpdate: (self) => {
           const progress = self.progress
+
+          if (prevProgress <= HEADER_HIDE_EPSILON && progress > HEADER_HIDE_EPSILON) {
+            hideHeader()
+          }
+          prevProgress = progress
 
           // Guard: only touch the video element while the section is
           // actually on/near screen, so a fast scroll past a far-off pin
           // range can't keep seeking a video nobody is looking at.
           if (isVisibleRef.current && video.readyState >= 1) {
             const target = progress * durationRef.current
-            if (Number.isFinite(target)) {
+            if (Number.isFinite(target) && Math.abs(target - video.currentTime) > MIN_SEEK_DELTA) {
               try {
                 video.currentTime = target
               } catch {
