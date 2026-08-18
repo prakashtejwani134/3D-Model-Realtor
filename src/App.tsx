@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
-import HeroVideoInterlude from './components/HeroVideoInterlude'
+import ScrollHero from './components/ScrollHero'
 import Hero from './components/Hero'
 import FeatureStrip from './components/FeatureStrip'
 import CaseStudy from './components/CaseStudy'
@@ -24,7 +24,7 @@ function App() {
       className={`font-body-md text-on-surface antialiased selection:bg-tertiary-fixed selection:text-primary-container overflow-x-hidden transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
     >
       <Header />
-      <HeroVideoInterlude />
+      <ScrollHero />
       <main>
         <Hero />
         <FeatureStrip />
