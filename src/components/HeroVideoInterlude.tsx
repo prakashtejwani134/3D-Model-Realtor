@@ -7,6 +7,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 const VIDEO_WEBM = '/video/studio-noir-teaser.webm'
 const VIDEO_MP4 = '/video/studio-noir-teaser.mp4'
+const VIDEO_POSTER = '/video/teaser-poster.jpg'
 
 // Matches the Higgsfield generation params (duration: 14). Overwritten with
 // the real value once the browser reports loadedmetadata, so this is only
@@ -211,6 +212,7 @@ export default function HeroVideoInterlude() {
           muted
           playsInline
           preload="auto"
+          poster={VIDEO_POSTER}
         >
           <source src={VIDEO_WEBM} type="video/webm" />
           <source src={VIDEO_MP4} type="video/mp4" />
