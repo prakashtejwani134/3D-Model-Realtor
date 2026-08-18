@@ -1,8 +1,30 @@
+import { useEffect, useRef } from 'react'
+
 const NAV_LINKS = ['Portfolio', 'Services', 'Pricing', 'Contact']
 
 function Header() {
+  const navRef = useRef<HTMLElement>(null)
+
+  // Publishes the header's real rendered height as a CSS custom property so
+  // other sections (e.g. ScrollHero's mobile full-viewport layout) can size
+  // themselves against it exactly, instead of a guessed/hardcoded px value.
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+
+    const publishHeight = () => {
+      document.documentElement.style.setProperty('--site-header-height', `${nav.offsetHeight}px`)
+    }
+
+    publishHeight()
+    const observer = new ResizeObserver(publishHeight)
+    observer.observe(nav)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <nav
+      ref={navRef}
       id="site-header"
       className="fixed top-0 z-50 flex w-full max-w-container-max items-center justify-between border-b border-outline-variant/20 bg-surface/80 px-margin-mobile py-6 backdrop-blur-xl md:px-margin-desktop mx-auto left-0 right-0"
     >

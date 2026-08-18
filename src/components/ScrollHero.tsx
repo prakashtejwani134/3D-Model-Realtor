@@ -21,10 +21,17 @@ const HEADER_REVEAL_DURATION = 0.5
 // header-hide check below only fires on genuine scroll movement, not jitter.
 const HEADER_HIDE_EPSILON = 0.002
 
-// How far the hero recedes as it scrolls past — gentle, not a full hide, so
-// the section never reads as "gone" mid-scroll.
+// How far the hero recedes right at the very end of its scroll range, as a
+// hand-off cue to the next section. Restricted to the last fraction of
+// progress (see EXIT_FADE_START) rather than fading linearly across the
+// whole range — on mobile that range now spans ~2 screens of scroll, and a
+// linear fade would have the hero visibly dimming while the user is still
+// mid-sequence, undermining the "one full immersive screen" effect.
+const EXIT_FADE_START = 0.88
 const EXIT_MIN_OPACITY = 0.65
 const EXIT_MIN_SCALE = 0.96
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
 /** Draws `img` into the canvas filling (dw, dh) with an object-fit: cover crop. */
 function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dw: number, dh: number) {
@@ -54,14 +61,22 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dw: num
  * with a 2D context. GSAP ScrollTrigger maps scroll progress linearly onto
  * frame index — no <video> element, no video.currentTime seeking.
  *
- * Deliberately not pinned: the wrapper is a normal, responsive-aspect-ratio
- * block in the document flow. Scrubbing happens over exactly the scroll
- * distance it takes the section to pass the top of the viewport, which
- * avoids the pin-spacer edge cases (spurious onEnter at page load, blank
- * states) that showed up with the earlier pinned video approach.
+ * Two nested elements:
+ *  - `wrapperRef` (outer, <section>): the ScrollTrigger target. On desktop
+ *    it's a normal aspect-video block (unchanged from before). On mobile
+ *    it's 200dvh tall, giving the frame sequence a full ~2-screen scroll
+ *    runway instead of the short aspect-[3/4] block it used to be.
+ *  - `visualRef` (inner div): the actual visible area, holding the canvas
+ *    and caption. On mobile it's `position: sticky` at the header's real
+ *    height, sized to exactly fill the viewport below it — CSS-native
+ *    stickiness, not GSAP's `pin: true`, specifically to avoid the
+ *    pin-spacer/spurious-onEnter issues that came up earlier this project
+ *    with JS-driven pinning. On desktop it's `static`, filling the outer
+ *    element exactly like before.
  */
 export default function ScrollHero() {
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const visualRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const captionRef = useRef<HTMLDivElement>(null)
   const framesRef = useRef<HTMLImageElement[]>([])
@@ -108,17 +123,17 @@ export default function ScrollHero() {
     currentFrameRef.current = index
   }
 
-  // Keeps the canvas backing store matching its CSS box (and device pixel
-  // ratio) so frames stay crisp across the desktop 16:9 / mobile 3:4
-  // breakpoints, and redraws the current frame after any resize.
+  // Keeps the canvas backing store matching the visible (sticky-on-mobile)
+  // box, not the tall scroll-range wrapper, and redraws the current frame
+  // after any resize.
   useEffect(() => {
-    const wrapper = wrapperRef.current
+    const visual = visualRef.current
     const canvas = canvasRef.current
-    if (!wrapper || !canvas) return
+    if (!visual || !canvas) return
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const rect = wrapper.getBoundingClientRect()
+      const rect = visual.getBoundingClientRect()
       canvas.width = Math.round(rect.width * dpr)
       canvas.height = Math.round(rect.height * dpr)
       drawFrame(currentFrameRef.current)
@@ -126,7 +141,7 @@ export default function ScrollHero() {
 
     resize()
     const observer = new ResizeObserver(resize)
-    observer.observe(wrapper)
+    observer.observe(visual)
     return () => observer.disconnect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -163,9 +178,11 @@ export default function ScrollHero() {
     let prevProgress = 0
 
     const ctx = gsap.context(() => {
-      // No pin: a normal section. "top top" -> "bottom top" covers exactly
-      // the scroll distance during which it passes by the top of the
-      // viewport, which drives both the frame scrub and the exit fade.
+      // No GSAP pin: "top top" -> "bottom top" covers exactly the scroll
+      // distance of the outer wrapper (short aspect-video block on desktop,
+      // tall 200dvh runway on mobile), which drives both the frame scrub
+      // and the exit fade. The mobile "stay full-screen" effect comes from
+      // visualRef's CSS position: sticky, not from this trigger pinning.
       ScrollTrigger.create({
         trigger: wrapper,
         start: 'top top',
@@ -195,8 +212,9 @@ export default function ScrollHero() {
             drawFrame(frameIndex)
           }
 
-          const opacity = gsap.utils.interpolate(1, EXIT_MIN_OPACITY, progress)
-          const scale = gsap.utils.interpolate(1, EXIT_MIN_SCALE, progress)
+          const exitT = clamp01((progress - EXIT_FADE_START) / (1 - EXIT_FADE_START))
+          const opacity = gsap.utils.interpolate(1, EXIT_MIN_OPACITY, exitT)
+          const scale = gsap.utils.interpolate(1, EXIT_MIN_SCALE, exitT)
           gsap.set(canvasRef.current, { opacity, scale })
           gsap.set(captionRef.current, { opacity, scale })
         },
@@ -210,45 +228,47 @@ export default function ScrollHero() {
   }, [])
 
   return (
-    <section
-      ref={wrapperRef}
-      className="relative aspect-[3/4] w-full overflow-hidden bg-[#131313] md:aspect-video"
-    >
-      {/* Plain <img>, painted natively before any JS runs — guarantees the
-          first frame is visible immediately, with zero blank-canvas gap. */}
-      <img
-        src={FIRST_FRAME}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        loading="eager"
-        fetchPriority="high"
-        aria-hidden="true"
-      />
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
-
-      {/* Vignette so the frame blends into the charcoal sections on either side */}
+    <section ref={wrapperRef} className="relative h-[200dvh] w-full md:h-auto md:aspect-video">
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#131313] via-transparent to-[#131313]"
-        style={{ opacity: 0.5 }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#131313]/50 via-transparent to-[#131313]/50" />
-
-      {!allLoaded && (
-        <div className="font-label-caps text-label-caps pointer-events-none absolute bottom-4 right-4 uppercase tracking-[0.2em] text-on-surface-variant/70">
-          Loading…
-        </div>
-      )}
-
-      <div
-        ref={captionRef}
-        className="absolute inset-x-0 bottom-[10%] flex flex-col items-center px-margin-mobile text-center md:bottom-[14%]"
+        ref={visualRef}
+        className="sticky top-[var(--site-header-height,90px)] h-[calc(100dvh-var(--site-header-height,90px))] w-full overflow-hidden bg-[#131313] md:static md:h-full"
       >
-        <span className="font-label-caps text-label-caps uppercase tracking-[0.15em] text-tertiary-fixed sm:tracking-[0.25em]">
-          Studio Noir — Property Teaser
-        </span>
-        <p className="font-display-lg-mobile mt-4 max-w-2xl text-xl text-on-surface md:text-3xl">
-          A quiet walk through light and material.
-        </p>
+        {/* Plain <img>, painted natively before any JS runs — guarantees the
+            first frame is visible immediately, with zero blank-canvas gap. */}
+        <img
+          src={FIRST_FRAME}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
+          fetchPriority="high"
+          aria-hidden="true"
+        />
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+
+        {/* Vignette so the frame blends into the charcoal sections on either side */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#131313] via-transparent to-[#131313]"
+          style={{ opacity: 0.5 }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#131313]/50 via-transparent to-[#131313]/50" />
+
+        {!allLoaded && (
+          <div className="font-label-caps text-label-caps pointer-events-none absolute bottom-4 right-4 uppercase tracking-[0.2em] text-on-surface-variant/70">
+            Loading…
+          </div>
+        )}
+
+        <div
+          ref={captionRef}
+          className="absolute inset-x-0 bottom-[8%] flex flex-col items-center px-margin-mobile text-center md:bottom-[14%]"
+        >
+          <span className="font-label-caps text-label-caps uppercase tracking-[0.15em] text-tertiary-fixed sm:tracking-[0.25em]">
+            Studio Noir — Property Teaser
+          </span>
+          <p className="font-display-lg-mobile mt-3 max-w-2xl text-xl leading-snug text-on-surface md:mt-4 md:text-3xl md:leading-normal">
+            A quiet walk through light and material.
+          </p>
+        </div>
       </div>
     </section>
   )
