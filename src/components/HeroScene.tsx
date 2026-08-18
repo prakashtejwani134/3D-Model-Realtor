@@ -5,7 +5,6 @@ import { ACESFilmicToneMapping, MathUtils } from 'three'
 import type { Group, PerspectiveCamera as ThreePerspectiveCamera } from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Lenis from 'lenis'
 import { useInViewport } from '../hooks/useInViewport'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -129,17 +128,8 @@ export default function HeroScene() {
   const isVisible = useInViewport(wrapperRef)
 
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    })
-
-    const onTick = (time: number) => lenis.raf(time * 1000)
-    gsap.ticker.add(onTick)
-    gsap.ticker.lagSmoothing(0)
-    lenis.on('scroll', ScrollTrigger.update)
-
+    // Smooth scroll (Lenis) is set up once at the App root via
+    // useSmoothScroll, so this only needs its own camera-drift trigger.
     const trigger = ScrollTrigger.create({
       trigger: wrapperRef.current,
       start: 'top top',
@@ -152,8 +142,6 @@ export default function HeroScene() {
 
     return () => {
       trigger.kill()
-      gsap.ticker.remove(onTick)
-      lenis.destroy()
     }
   }, [])
 
