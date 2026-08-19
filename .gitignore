@@ -25,3 +25,10 @@ dist-ssr
 
 # Unused source asset (118MB, not referenced by the app — see public/models/studio-noir-chair.glb)
 public/models/studio-noir-chair-raw.glb
+
+# Local AI agent/tool configuration (Impeccable, Emil Kowalski's skills, UI/UX
+# Pro Max, Taste Skill) — machine-local install output, not app source.
+# .claude/settings.local.json is already handled by the global gitignore.
+.agents/
+.claude/skills/
+skills-lock.json
