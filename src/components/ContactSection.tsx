@@ -1,10 +1,18 @@
+import { useScrollReveal } from '../hooks/useScrollReveal'
+
 function ContactSection() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
   }
 
+  const sectionRef = useScrollReveal<HTMLElement>()
+
   return (
-    <section id="contact" className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
+    <section
+      id="contact"
+      ref={sectionRef}
+      className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop"
+    >
       <div className="grid grid-cols-1 items-start gap-gutter md:grid-cols-2 md:items-center">
         <div className="flex flex-col gap-6 pr-0 md:gap-8 md:pr-16">
           <span className="font-label-caps text-label-caps uppercase text-tertiary-fixed">
@@ -46,7 +54,7 @@ function ContactSection() {
                 type="text"
                 autoComplete="name"
                 className="input-field font-body-md text-body-md"
-                placeholder="John Doe"
+                placeholder="Your name"
               />
             </div>
             <div className="flex flex-col">
@@ -62,7 +70,7 @@ function ContactSection() {
                 type="email"
                 autoComplete="email"
                 className="input-field font-body-md text-body-md"
-                placeholder="john@developer.com"
+                placeholder="you@company.com"
               />
             </div>
             <div className="flex flex-col">
@@ -78,7 +86,7 @@ function ContactSection() {
                 type="tel"
                 autoComplete="tel"
                 className="input-field font-body-md text-body-md"
-                placeholder="+1 (555) 000-0000"
+                placeholder="+1 555 000 0000"
               />
             </div>
             <div className="flex flex-col">

@@ -44,6 +44,11 @@
     background: rgba(218, 199, 105, 0.1);
   }
 
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-tertiary-fixed;
+  }
+
   .input-field {
     @apply w-full border-0 border-b bg-transparent text-on-surface outline-none;
     border-color: #262626;
@@ -54,7 +59,7 @@
     @apply border-tertiary-fixed;
   }
   .input-field::placeholder {
-    color: #7b7979;
+    @apply text-on-surface-variant;
   }
 
   .raised-surface {

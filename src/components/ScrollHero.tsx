@@ -245,7 +245,7 @@ export default function ScrollHero() {
         className="absolute inset-x-0 bottom-[10%] flex flex-col items-center px-margin-mobile text-center md:bottom-[14%]"
       >
         <span className="font-label-caps text-label-caps uppercase tracking-[0.15em] text-tertiary-fixed sm:tracking-[0.25em]">
-          Studio Noir — Property Teaser
+          Studio Noir / Property Teaser
         </span>
         <p className="font-display-lg-mobile mt-4 max-w-2xl text-xl text-on-surface md:text-3xl">
           A quiet walk through light and material.

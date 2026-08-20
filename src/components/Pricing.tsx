@@ -1,3 +1,5 @@
+import { useScrollReveal } from '../hooks/useScrollReveal'
+
 type Tier = {
   name: string
   price: string
@@ -46,8 +48,14 @@ const TIERS: Tier[] = [
 ]
 
 function Pricing() {
+  const sectionRef = useScrollReveal<HTMLElement>({ staggerSelector: '[data-reveal-item]' })
+
   return (
-    <section id="pricing" className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
+    <section
+      id="pricing"
+      ref={sectionRef}
+      className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop"
+    >
       <div className="mb-16 text-center">
         <h2 className="font-headline-lg text-headline-md mb-4 text-on-surface md:text-headline-lg">
           Investment
@@ -60,6 +68,7 @@ function Pricing() {
         {TIERS.map((tier, index) => (
           <div
             key={tier.name}
+            data-reveal-item
             className={`relative flex flex-col gap-6 p-8 border-b md:border-b-0 ${
               index < TIERS.length - 1 ? 'md:border-r' : ''
             } border-outline-variant/20 ${

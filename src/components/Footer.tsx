@@ -11,14 +11,15 @@ function Footer() {
           <a
             key={link}
             href="#"
-            className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-tertiary-fixed"
+            className="font-body-md text-body-md text-on-surface-variant transition-colors hover:text-tertiary-fixed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary-fixed"
           >
             {link.toUpperCase()}
           </a>
         ))}
       </div>
-      <div className="font-body-md text-body-md text-on-surface-variant">
-        © 2024 STUDIO NOIR. AJMER, INDIA.
+      <div className="flex flex-col gap-1 font-body-md text-body-md text-on-surface-variant">
+        <span>© {new Date().getFullYear()} STUDIO NOIR. AJMER, INDIA.</span>
+        <span>Serving real-estate teams in the US and UAE.</span>
       </div>
     </footer>
   )

@@ -35,16 +35,30 @@ export function useSmoothScroll() {
     gsap.ticker.lagSmoothing(0)
     lenis.on('scroll', ScrollTrigger.update)
 
+    // Focusing an off-screen element (keyboard Tab, screen reader) triggers
+    // the browser's native focus-scroll directly, bypassing Lenis entirely —
+    // Lenis never sees that jump, so no 'scroll' re-emits and any
+    // ScrollTrigger (e.g. entrance reveals) never re-evaluates against the
+    // new position. A plain ScrollTrigger.update() reflects the new scroll
+    // value in .progress()/.isActive but does not re-run the enter/leave
+    // callback pass for a trigger that was already marked active before the
+    // jump; .refresh() re-derives each trigger's state from scratch and does
+    // fire them. Focus events are user-paced, not high-frequency, so the
+    // heavier recalculation is not a performance concern here.
+    const onFocusIn = () => ScrollTrigger.refresh()
+    document.addEventListener('focusin', onFocusIn)
+
     return () => {
       lenisInstance = null
       gsap.ticker.remove(onTick)
+      document.removeEventListener('focusin', onFocusIn)
       lenis.destroy()
     }
   }, [])
 }
 
 /** True when the user's OS/browser is set to minimize motion. */
-function prefersReducedMotion() {
+export function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
