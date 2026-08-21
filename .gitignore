@@ -32,3 +32,4 @@ public/models/studio-noir-chair-raw.glb
 .agents/
 .claude/skills/
 skills-lock.json
+.impeccable/

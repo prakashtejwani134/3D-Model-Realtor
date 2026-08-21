@@ -43,15 +43,24 @@ export function useSmoothScroll() {
     // value in .progress()/.isActive but does not re-run the enter/leave
     // callback pass for a trigger that was already marked active before the
     // jump; .refresh() re-derives each trigger's state from scratch and does
-    // fire them. Focus events are user-paced, not high-frequency, so the
-    // heavier recalculation is not a performance concern here.
-    const onFocusIn = () => ScrollTrigger.refresh()
+    // fire them. Debounced (plain setTimeout, no new dependency): .refresh()
+    // recalculates every registered ScrollTrigger on the page, including
+    // ScrollHero's own scrub trigger, so Tab-cycling several fields in a
+    // row (e.g. the contact form) collapses into a single recalculation
+    // after focus settles instead of one per keystroke. Focus itself is
+    // untouched — only this side-effect is delayed.
+    let refreshTimeout: ReturnType<typeof setTimeout> | undefined
+    const onFocusIn = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout)
+      refreshTimeout = setTimeout(() => ScrollTrigger.refresh(), 120)
+    }
     document.addEventListener('focusin', onFocusIn)
 
     return () => {
       lenisInstance = null
       gsap.ticker.remove(onTick)
       document.removeEventListener('focusin', onFocusIn)
+      if (refreshTimeout) clearTimeout(refreshTimeout)
       lenis.destroy()
     }
   }, [])

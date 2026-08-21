@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { scrollToSection } from '../hooks/useSmoothScroll'
+import { prefersReducedMotion, scrollToSection } from '../hooks/useSmoothScroll'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -68,11 +68,21 @@ export default function ScrollHero() {
   const framesRef = useRef<HTMLImageElement[]>([])
   const currentFrameRef = useRef(0)
   const [allLoaded, setAllLoaded] = useState(false)
+  // Computed once per mount, not reactive to a live OS-setting change mid
+  // session — matches the same convention useScrollReveal already follows.
+  const reduceMotion = useRef(prefersReducedMotion()).current
 
   // Preload every frame once. The static <img> fallback below (plain HTML,
   // painted natively by the browser) covers the gap before this finishes,
   // so there's never a blank canvas moment even on a slow connection.
+  // Skipped entirely under reduced motion: that static first frame is the
+  // whole picture there, so there's no reason to fetch the other 83.
   useEffect(() => {
+    if (reduceMotion) {
+      setAllLoaded(true)
+      return
+    }
+
     let cancelled = false
     const images: HTMLImageElement[] = []
     let loadedCount = 0
@@ -111,8 +121,12 @@ export default function ScrollHero() {
 
   // Keeps the canvas backing store matching its CSS box (and device pixel
   // ratio) so frames stay crisp across the desktop 16:9 / mobile 3:4
-  // breakpoints, and redraws the current frame after any resize.
+  // breakpoints, and redraws the current frame after any resize. Skipped
+  // under reduced motion: the canvas never gets drawn to, so sizing it is
+  // wasted work.
   useEffect(() => {
+    if (reduceMotion) return
+
     const wrapper = wrapperRef.current
     const canvas = canvasRef.current
     if (!wrapper || !canvas) return
@@ -132,7 +146,12 @@ export default function ScrollHero() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Skipped entirely under reduced motion: no scrub, no header hide/reveal,
+  // no exit fade/scale. Header stays put and the caption stays fully
+  // legible at rest, matching the plain static-poster presentation below.
   useEffect(() => {
+    if (reduceMotion) return
+
     const wrapper = wrapperRef.current
     if (!wrapper) return
 
@@ -215,6 +234,11 @@ export default function ScrollHero() {
       ref={wrapperRef}
       className="relative aspect-[3/4] w-full overflow-hidden bg-[#131313] md:aspect-video"
     >
+      {/* The page's one semantic <h1> — visually hidden so it doesn't
+          disrupt the approved hero composition, which uses a <p> for its
+          on-screen headline for its own type-scale reasons. */}
+      <h1 className="sr-only">Studio Noir - Luxury 3D Real Estate Tours</h1>
+
       {/* Plain <img>, painted natively before any JS runs — guarantees the
           first frame is visible immediately, with zero blank-canvas gap. */}
       <img
