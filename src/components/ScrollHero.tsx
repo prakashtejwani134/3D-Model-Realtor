@@ -9,6 +9,35 @@ const FRAME_COUNT = 84
 const FRAME_PATH = (index: number) => `/hero-frames/frame${String(index + 1).padStart(4, '0')}.webp`
 const FIRST_FRAME = FRAME_PATH(0)
 
+// Frames 0-11 (frame0001.webp..frame0012.webp) load immediately so early
+// scroll interaction already has real frames to scrub through. Frames
+// 12-83 stream in afterward via requestIdleCallback, in small batches, so
+// they never compete with first paint / interactivity for bandwidth or
+// main-thread time.
+const INITIAL_WINDOW_END = 12
+const IDLE_BATCH_SIZE = 4
+// Also doubles as the requestIdleCallback timeout: guarantees a batch
+// still runs even if the browser never reports an idle period.
+const IDLE_FALLBACK_MS = 200
+
+type IdleHandle = number
+
+/** requestIdleCallback with a setTimeout fallback for browsers without it (Safari). */
+function scheduleIdle(cb: () => void): IdleHandle {
+  if (typeof window.requestIdleCallback === 'function') {
+    return window.requestIdleCallback(cb, { timeout: IDLE_FALLBACK_MS })
+  }
+  return window.setTimeout(cb, IDLE_FALLBACK_MS) as unknown as IdleHandle
+}
+
+function cancelIdle(handle: IdleHandle) {
+  if (typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(handle)
+  } else {
+    window.clearTimeout(handle)
+  }
+}
+
 // Targets the fixed nav rendered by Header.tsx. Looked up via plain DOM
 // query rather than a selector string handed to GSAP, because it lives
 // outside this component's own subtree — gsap.context() scopes selector
@@ -51,9 +80,12 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dw: num
 
 /**
  * Full frame-sequence scroll-scrubbed hero: 84 WebP frames extracted from
- * the Higgsfield clip, preloaded into an Image[] and drawn onto a <canvas>
- * with a 2D context. GSAP ScrollTrigger maps scroll progress linearly onto
- * frame index — no <video> element, no video.currentTime seeking.
+ * the Higgsfield clip, loaded progressively into a sparse Image[] and
+ * drawn onto a <canvas> with a 2D context. GSAP ScrollTrigger maps scroll
+ * progress linearly onto frame index — no <video> element, no
+ * video.currentTime seeking. Only frames 0-11 load immediately; the rest
+ * stream in via requestIdleCallback so the other ~72 frames never compete
+ * with first paint or interactivity for bandwidth or main-thread time.
  *
  * Deliberately not pinned: the wrapper is a normal, responsive-aspect-ratio
  * block in the document flow. Scrubbing happens over exactly the scroll
@@ -65,59 +97,114 @@ export default function ScrollHero() {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const captionRef = useRef<HTMLDivElement>(null)
-  const framesRef = useRef<HTMLImageElement[]>([])
+  // Sparse: entries are created lazily, only for frames actually requested
+  // so far — never all 84 up front.
+  const framesRef = useRef<(HTMLImageElement | undefined)[]>([])
+  const loadedRef = useRef<Set<number>>(new Set())
   const currentFrameRef = useRef(0)
-  const [allLoaded, setAllLoaded] = useState(false)
+  const [initialReady, setInitialReady] = useState(false)
   // Computed once per mount, not reactive to a live OS-setting change mid
   // session — matches the same convention useScrollReveal already follows.
   const reduceMotion = useRef(prefersReducedMotion()).current
 
-  // Preload every frame once. The static <img> fallback below (plain HTML,
-  // painted natively by the browser) covers the gap before this finishes,
-  // so there's never a blank canvas moment even on a slow connection.
-  // Skipped entirely under reduced motion: that static first frame is the
-  // whole picture there, so there's no reason to fetch the other 83.
+  // If the exact requested frame isn't loaded yet (scrolled ahead of the
+  // progressive queue), fall back to the nearest frame that IS loaded
+  // rather than leaving the canvas showing a stale/blank image.
+  function findNearestLoaded(index: number): number | null {
+    if (loadedRef.current.has(index)) return index
+    for (let d = 1; d < FRAME_COUNT; d++) {
+      const before = index - d
+      const after = index + d
+      if (before >= 0 && loadedRef.current.has(before)) return before
+      if (after < FRAME_COUNT && loadedRef.current.has(after)) return after
+      if (before < 0 && after >= FRAME_COUNT) break
+    }
+    return null
+  }
+
+  function drawFrame(index: number) {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const resolved = findNearestLoaded(index)
+    if (resolved === null) return
+    const img = framesRef.current[resolved]
+    if (!img || !img.complete || img.naturalWidth === 0) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    drawCover(ctx, img, canvas.width, canvas.height)
+    currentFrameRef.current = resolved
+  }
+
+  // Progressive load: frames 0-11 immediately (early scroll needs real
+  // frames right away), frames 12-83 in small idle-time batches,
+  // re-prioritized each batch by distance from whatever frame is
+  // currently on screen. The static <img> fallback below (plain HTML,
+  // painted natively by the browser) covers the gap before frame 0
+  // finishes, so there's never a blank canvas moment. Skipped entirely
+  // under reduced motion: that static first frame is the whole picture
+  // there, so there's no reason to fetch the other 83.
   useEffect(() => {
     if (reduceMotion) {
-      setAllLoaded(true)
+      setInitialReady(true)
       return
     }
 
     let cancelled = false
-    const images: HTMLImageElement[] = []
-    let loadedCount = 0
+    let idleHandle: IdleHandle | undefined
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
+    function loadFrame(index: number, onSettled: () => void) {
+      if (framesRef.current[index]) {
+        onSettled()
+        return
+      }
       const img = new Image()
-      img.src = FRAME_PATH(i)
+      framesRef.current[index] = img
       img.onload = () => {
-        loadedCount += 1
-        if (i === 0) drawFrame(0)
-        if (loadedCount === FRAME_COUNT && !cancelled) setAllLoaded(true)
+        if (cancelled) return
+        loadedRef.current.add(index)
+        if (index === 0) drawFrame(0)
+        onSettled()
       }
       img.onerror = () => {
-        loadedCount += 1
-        if (loadedCount === FRAME_COUNT && !cancelled) setAllLoaded(true)
+        if (cancelled) return
+        onSettled()
       }
-      images.push(img)
+      img.src = FRAME_PATH(index)
     }
-    framesRef.current = images
+
+    let remainingInitial = INITIAL_WINDOW_END
+    const onInitialFrameSettled = () => {
+      remainingInitial -= 1
+      if (remainingInitial === 0 && !cancelled) setInitialReady(true)
+    }
+    for (let i = 0; i < INITIAL_WINDOW_END; i++) {
+      loadFrame(i, onInitialFrameSettled)
+    }
+
+    const queue: number[] = []
+    for (let i = INITIAL_WINDOW_END; i < FRAME_COUNT; i++) queue.push(i)
+
+    function runBatch() {
+      if (cancelled || queue.length === 0) return
+      queue.sort((a, b) => Math.abs(a - currentFrameRef.current) - Math.abs(b - currentFrameRef.current))
+      const batch = queue.splice(0, IDLE_BATCH_SIZE)
+      let pending = batch.length
+      const onBatchFrameSettled = () => {
+        pending -= 1
+        if (pending === 0 && !cancelled) {
+          idleHandle = scheduleIdle(runBatch)
+        }
+      }
+      batch.forEach((i) => loadFrame(i, onBatchFrameSettled))
+    }
+    idleHandle = scheduleIdle(runBatch)
 
     return () => {
       cancelled = true
+      if (idleHandle !== undefined) cancelIdle(idleHandle)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  function drawFrame(index: number) {
-    const canvas = canvasRef.current
-    const img = framesRef.current[index]
-    if (!canvas || !img || !img.complete || img.naturalWidth === 0) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawCover(ctx, img, canvas.width, canvas.height)
-    currentFrameRef.current = index
-  }
 
   // Keeps the canvas backing store matching its CSS box (and device pixel
   // ratio) so frames stay crisp across the desktop 16:9 / mobile 3:4
@@ -258,7 +345,7 @@ export default function ScrollHero() {
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#131313]/50 via-transparent to-[#131313]/50" />
 
-      {!allLoaded && (
+      {!initialReady && (
         <div className="font-label-caps text-label-caps pointer-events-none absolute bottom-4 right-4 uppercase tracking-[0.2em] text-on-surface-variant/70">
           Loading…
         </div>

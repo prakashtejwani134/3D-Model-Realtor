@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "src={first_frame}",
+        "files": [
+          "src/components/ScrollHero.tsx"
+        ],
+        "createdAt": "2026-08-21T15:11:32.130Z",
+        "reason": "false positive: FIRST_FRAME resolves to /hero-frames/frame0001.webp, a real preloaded asset; detector can't statically evaluate the computed src"
+      },
+      {
+        "rule": "overused-font",
+        "value": "montserrat",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-08-22T15:33:09.958Z",
+        "reason": "pre-existing approved typography (Montserrat + Bodoni Moda) established since the original Studio Noir design, not touched by Phase 12D-Fix; user explicitly excluded font changes from this batch's scope"
+      }
+    ]
+  }
+}
