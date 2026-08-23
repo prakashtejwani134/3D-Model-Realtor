@@ -1,11 +1,28 @@
+import { useEffect, useRef } from 'react'
 import { useScrollReveal } from '../hooks/useScrollReveal'
 
-function ContactSection() {
+type ContactSectionProps = {
+  /** Tier name picked on the Pricing section, if any. */
+  selectedPlan?: string | null
+}
+
+function ContactSection({ selectedPlan }: ContactSectionProps) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
   }
 
   const sectionRef = useScrollReveal<HTMLElement>()
+  const messageRef = useRef<HTMLTextAreaElement>(null)
+
+  // Prefills the message field when a plan is picked on Pricing. Imperative
+  // (not a controlled textarea) so it doesn't disturb anything the visitor
+  // may have already typed in the other fields, and only touches this one
+  // field exactly when the plan actually changes.
+  useEffect(() => {
+    if (selectedPlan && messageRef.current) {
+      messageRef.current.value = `Interested in: ${selectedPlan}\n\n`
+    }
+  }, [selectedPlan])
 
   return (
     <section
@@ -26,17 +43,24 @@ function ContactSection() {
             our capabilities, we are ready to elevate your property&apos;s
             visual narrative.
           </p>
-          <button
-            type="button"
-            className="group -mx-2 flex w-fit items-center gap-3 px-2 py-3 text-on-surface transition-colors hover:text-tertiary-fixed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary-fixed"
-          >
-            <span className="material-symbols-outlined text-2xl transition-transform group-hover:scale-110">
-              chat
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="group -mx-2 flex w-fit items-center gap-3 px-2 py-3 text-on-surface opacity-50 disabled:cursor-not-allowed disabled:hover:text-on-surface"
+            >
+              <span className="material-symbols-outlined text-2xl">
+                chat
+              </span>
+              <span className="font-label-caps text-label-caps border-b border-transparent pb-0.5 uppercase">
+                Chat on WhatsApp
+              </span>
+            </button>
+            <span className="font-body-md text-body-md text-on-surface-variant">
+              Available in Phase 15.
             </span>
-            <span className="font-label-caps text-label-caps border-b border-transparent pb-0.5 uppercase group-hover:border-tertiary-fixed">
-              Chat on WhatsApp
-            </span>
-          </button>
+          </div>
         </div>
 
         <div className="raised-surface mt-12 p-8 md:mt-0 md:p-12">
@@ -99,17 +123,25 @@ function ContactSection() {
               <textarea
                 id="contact-message"
                 name="message"
+                ref={messageRef}
                 rows={3}
                 className="input-field font-body-md text-body-md resize-none"
                 placeholder="Tell us about the property, market, and desired launch date."
               />
             </div>
-            <button
-              type="submit"
-              className="btn-primary font-label-caps text-label-caps mt-4 px-8 py-4 uppercase"
-            >
-              Send Inquiry
-            </button>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="submit"
+                disabled
+                aria-disabled="true"
+                className="btn-primary font-label-caps text-label-caps px-8 py-4 uppercase opacity-50 disabled:cursor-not-allowed"
+              >
+                Send Inquiry
+              </button>
+              <span className="font-body-md text-body-md text-on-surface-variant">
+                Available in Phase 15.
+              </span>
+            </div>
           </form>
         </div>
       </div>

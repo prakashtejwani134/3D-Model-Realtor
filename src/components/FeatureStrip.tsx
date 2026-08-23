@@ -22,7 +22,11 @@ function FeatureStrip() {
   const sectionRef = useScrollReveal<HTMLElement>({ staggerSelector: '[data-reveal-item]' })
 
   return (
-    <section ref={sectionRef} className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop">
+    <section
+      id="features"
+      ref={sectionRef}
+      className="mx-auto max-w-container-max px-margin-mobile pb-section-gap md:px-margin-desktop"
+    >
       <div className="grid grid-cols-1 gap-gutter border-t border-outline-variant/20 pt-16 md:grid-cols-3">
         {FEATURES.map((feature) => (
           <div key={feature.title} data-reveal-item className="flex flex-col items-start gap-4">

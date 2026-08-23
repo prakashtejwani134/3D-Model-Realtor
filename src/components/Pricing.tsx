@@ -1,4 +1,5 @@
 import { useScrollReveal } from '../hooks/useScrollReveal'
+import { scrollToSection } from '../hooks/useSmoothScroll'
 
 type Tier = {
   name: string
@@ -47,8 +48,19 @@ const TIERS: Tier[] = [
   },
 ]
 
-function Pricing() {
+type PricingProps = {
+  /** Called with the tier name when a visitor picks a plan, so the choice
+   * can be carried into the contact form's message field. */
+  onSelectPlan?: (planName: string) => void
+}
+
+function Pricing({ onSelectPlan }: PricingProps) {
   const sectionRef = useScrollReveal<HTMLElement>({ staggerSelector: '[data-reveal-item]' })
+
+  const handleSelectPlan = (planName: string) => {
+    onSelectPlan?.(planName)
+    scrollToSection('contact')
+  }
 
   return (
     <section
@@ -107,6 +119,7 @@ function Pricing() {
             </ul>
             <button
               type="button"
+              onClick={() => handleSelectPlan(tier.name)}
               className={`font-label-caps text-label-caps mt-8 w-full px-6 py-3 uppercase ${
                 tier.highlighted
                   ? 'btn-secondary text-tertiary-fixed'

@@ -1,4 +1,5 @@
 import { useScrollReveal } from '../hooks/useScrollReveal'
+import { scrollToSection } from '../hooks/useSmoothScroll'
 
 // Placeholder stock photo — doesn't match ScrollHero's bespoke Higgsfield
 // grade. Content debt: swap for real project photography/renders when
@@ -38,6 +39,7 @@ function CaseStudy() {
           <div className="pt-4">
             <button
               type="button"
+              onClick={() => scrollToSection('features')}
               className="btn-secondary font-label-caps text-label-caps px-8 py-4 uppercase"
             >
               See the Approach

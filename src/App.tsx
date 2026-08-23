@@ -18,6 +18,10 @@ function App() {
     setMounted(true)
   }, [])
 
+  // Carries a picked pricing tier into the contact form's message field.
+  // Lifted here since Pricing and ContactSection are siblings.
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+
   return (
     <div
       className={`font-body-md text-on-surface antialiased selection:bg-tertiary-fixed selection:text-primary-container overflow-x-hidden transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
@@ -27,8 +31,8 @@ function App() {
       <main>
         <FeatureStrip />
         <CaseStudy />
-        <Pricing />
-        <ContactSection />
+        <Pricing onSelectPlan={setSelectedPlan} />
+        <ContactSection selectedPlan={selectedPlan} />
       </main>
       <Footer />
     </div>
