@@ -23,7 +23,7 @@ function Header() {
         href="#"
         className="font-headline-md text-headline-md tracking-tighter text-on-surface"
       >
-        STUDIO NOIR
+        MERIDIAN RENDER CO.
       </a>
       <div className="hidden items-center gap-8 md:flex">
         {NAV_LINKS.map((link) => (

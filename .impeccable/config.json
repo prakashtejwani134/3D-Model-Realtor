@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-08-22T15:33:09.958Z",
         "reason": "pre-existing approved typography (Montserrat + Bodoni Moda) established since the original Studio Noir design, not touched by Phase 12D-Fix; user explicitly excluded font changes from this batch's scope"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/components/ScrollHero.tsx"
+        ],
+        "createdAt": "2026-08-25T17:15:13.411Z",
+        "reason": "false positive: src={FIRST_FRAME} resolves to a real computed asset path (FRAME_PATH(0)), not empty/placeholder; pre-existing eager first-frame fallback img, unrelated to brand rename edit"
       }
     ]
   }

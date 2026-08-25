@@ -324,7 +324,7 @@ export default function ScrollHero() {
       {/* The page's one semantic <h1> — visually hidden so it doesn't
           disrupt the approved hero composition, which uses a <p> for its
           on-screen headline for its own type-scale reasons. */}
-      <h1 className="sr-only">Studio Noir - Luxury 3D Real Estate Tours</h1>
+      <h1 className="sr-only">Meridian Render Co. - Luxury 3D Real Estate Tours</h1>
 
       {/* Plain <img>, painted natively before any JS runs — guarantees the
           first frame is visible immediately, with zero blank-canvas gap. */}
@@ -356,7 +356,7 @@ export default function ScrollHero() {
         className="absolute inset-x-0 bottom-[10%] flex flex-col items-center px-margin-mobile text-center md:bottom-[14%]"
       >
         <span className="font-label-caps text-label-caps uppercase tracking-[0.15em] text-tertiary-fixed sm:tracking-[0.25em]">
-          Studio Noir / Property Teaser
+          Meridian Render Co. / Property Teaser
         </span>
         <p className="font-display-lg-mobile mt-4 max-w-2xl text-xl text-on-surface md:text-3xl">
           A quiet walk through light and material.
