@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useScrollReveal } from '../hooks/useScrollReveal'
 
 type ContactSectionProps = {
@@ -6,23 +6,55 @@ type ContactSectionProps = {
   selectedPlan?: string | null
 }
 
-function ContactSection({ selectedPlan }: ContactSectionProps) {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-  }
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xqpkayqv'
 
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
+
+function ContactSection({ selectedPlan }: ContactSectionProps) {
   const sectionRef = useScrollReveal<HTMLElement>()
   const messageRef = useRef<HTMLTextAreaElement>(null)
 
-  // Prefills the message field when a plan is picked on Pricing. Imperative
-  // (not a controlled textarea) so it doesn't disturb anything the visitor
-  // may have already typed in the other fields, and only touches this one
-  // field exactly when the plan actually changes.
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState<SubmitStatus>('idle')
+
+  // Prefills the message field when a plan is picked on Pricing, without
+  // disturbing anything the visitor may have already typed elsewhere.
   useEffect(() => {
-    if (selectedPlan && messageRef.current) {
-      messageRef.current.value = `Interested in: ${selectedPlan}\n\n`
+    if (selectedPlan) {
+      setMessage(`Interested in: ${selectedPlan}\n\n`)
+      messageRef.current?.focus()
     }
   }, [selectedPlan])
+
+  const isValid = email.trim() !== '' && message.trim() !== ''
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!isValid || status === 'submitting') return
+
+    setStatus('submitting')
+
+    try {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: new FormData(event.currentTarget),
+      })
+
+      if (response.ok) {
+        setStatus('success')
+        setEmail('')
+        setPhone('')
+        setMessage('')
+      } else {
+        setStatus('error')
+      }
+    } catch {
+      setStatus('error')
+    }
+  }
 
   return (
     <section
@@ -92,7 +124,10 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
                 id="contact-email"
                 name="email"
                 type="email"
+                required
                 autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 className="input-field font-body-md text-body-md"
                 placeholder="you@company.com"
               />
@@ -102,13 +137,18 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
                 htmlFor="contact-phone"
                 className="font-label-caps text-label-caps mb-2 uppercase text-on-surface-variant"
               >
-                Phone
+                Phone{' '}
+                <span className="normal-case text-on-surface-variant/70">
+                  (Optional)
+                </span>
               </label>
               <input
                 id="contact-phone"
                 name="phone"
                 type="tel"
                 autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
                 className="input-field font-body-md text-body-md"
                 placeholder="+1 555 000 0000"
               />
@@ -124,7 +164,10 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
                 id="contact-message"
                 name="message"
                 ref={messageRef}
+                required
                 rows={3}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
                 className="input-field font-body-md text-body-md resize-none"
                 placeholder="Tell us about the property, market, and desired launch date."
               />
@@ -132,15 +175,26 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
             <div className="mt-4 flex flex-col gap-2">
               <button
                 type="submit"
-                disabled
-                aria-disabled="true"
-                className="btn-primary font-label-caps text-label-caps px-8 py-4 uppercase opacity-50 disabled:cursor-not-allowed"
+                disabled={!isValid || status === 'submitting'}
+                aria-disabled={!isValid || status === 'submitting'}
+                className="btn-primary font-label-caps text-label-caps px-8 py-4 uppercase disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Send Inquiry
+                {status === 'submitting' ? 'Sending…' : 'Send Inquiry'}
               </button>
-              <span className="font-body-md text-body-md text-on-surface-variant">
-                Available in Phase 15.
-              </span>
+              <div aria-live="polite">
+                {status === 'success' && (
+                  <span className="font-body-md text-body-md text-tertiary-fixed">
+                    Thank you — your inquiry has been received. We&apos;ll
+                    reply within one business day.
+                  </span>
+                )}
+                {status === 'error' && (
+                  <span className="font-body-md text-body-md text-error">
+                    We couldn&apos;t send your inquiry. Please try again or
+                    email hello@meridianrenderco.com.
+                  </span>
+                )}
+              </div>
             </div>
           </form>
         </div>
