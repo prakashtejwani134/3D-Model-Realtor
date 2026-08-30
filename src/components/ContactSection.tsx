@@ -8,6 +8,11 @@ type ContactSectionProps = {
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xqpkayqv'
 
+const WHATSAPP_NUMBER = '916377986953'
+const WHATSAPP_MESSAGE =
+  "Hi Meridian Render Co., I'd like to know more about your 3D property visualization services."
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
 function ContactSection({ selectedPlan }: ContactSectionProps) {
@@ -76,11 +81,11 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
             visual narrative.
           </p>
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              className="group -mx-2 flex w-fit items-center gap-3 px-2 py-3 text-on-surface opacity-50 disabled:cursor-not-allowed disabled:hover:text-on-surface"
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group -mx-2 flex w-fit items-center gap-3 px-2 py-3 text-on-surface"
             >
               <span className="material-symbols-outlined text-2xl">
                 chat
@@ -88,10 +93,7 @@ function ContactSection({ selectedPlan }: ContactSectionProps) {
               <span className="font-label-caps text-label-caps border-b border-transparent pb-0.5 uppercase">
                 Chat on WhatsApp
               </span>
-            </button>
-            <span className="font-body-md text-body-md text-on-surface-variant">
-              Available in Phase 15.
-            </span>
+            </a>
           </div>
         </div>
 
