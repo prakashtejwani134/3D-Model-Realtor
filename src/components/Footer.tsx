@@ -1,4 +1,14 @@
-const SOCIAL_LINKS = ['Instagram', 'LinkedIn', 'WhatsApp']
+const LINKEDIN_URL = 'https://www.linkedin.com/in/prakash-tejwani-90ab32194/'
+
+const WHATSAPP_NUMBER = '916377986953'
+const WHATSAPP_MESSAGE =
+  "Hi Meridian Render Co., I'd like to know more about your 3D property visualization services."
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+
+const SOCIAL_LINKS = [
+  { label: 'LinkedIn', href: LINKEDIN_URL },
+  { label: 'WhatsApp', href: WHATSAPP_URL },
+]
 
 function Footer() {
   return (
@@ -6,21 +16,18 @@ function Footer() {
       <div className="font-headline-md text-headline-md text-on-surface">
         MERIDIAN RENDER CO.
       </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-6 md:flex-row md:gap-12">
-          {SOCIAL_LINKS.map((link) => (
-            <span
-              key={link}
-              aria-disabled="true"
-              className="font-body-md text-body-md cursor-not-allowed text-on-surface-variant opacity-50"
-            >
-              {link.toUpperCase()}
-            </span>
-          ))}
-        </div>
-        <span className="font-body-md text-body-md text-on-surface-variant">
-          Live links launch in Phase 15.
-        </span>
+      <div className="flex flex-col gap-6 md:flex-row md:gap-8">
+        {SOCIAL_LINKS.map((link) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body-md text-body-md text-on-surface-variant"
+          >
+            {link.label.toUpperCase()}
+          </a>
+        ))}
       </div>
       <div className="flex flex-col gap-1 font-body-md text-body-md text-on-surface-variant">
         <span>© {new Date().getFullYear()} MERIDIAN RENDER CO. AJMER, INDIA.</span>
