@@ -39,6 +39,20 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- TEMP-DEBUG: Eruda mobile console, gated by ?debug=1. No script tag
+         is emitted unless the query param is present, so a normal visit
+         makes zero extra request and shows no floating button. Remove this
+         whole block before the final production deploy. -->
+    <script>
+      if (window.location.search.indexOf('debug=1') !== -1) {
+        var erudaScript = document.createElement('script')
+        erudaScript.src = 'https://cdn.jsdelivr.net/npm/eruda'
+        erudaScript.onload = function () {
+          window.eruda && window.eruda.init()
+        }
+        document.head.appendChild(erudaScript)
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

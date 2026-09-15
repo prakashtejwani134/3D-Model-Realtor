@@ -13,8 +13,17 @@ gsap.registerPlugin(ScrollTrigger)
 ScrollTrigger.config({ ignoreMobileResize: true })
 
 const FRAME_COUNT = 120
-const FRAME_PATH = (index: number) => `/hero-frames/frame${String(index + 1).padStart(4, '0')}.webp`
-const FIRST_FRAME = FRAME_PATH(0)
+
+// Two parallel, identically-numbered frame sets — 1600x900 for wide
+// viewports, 900x1600 (portrait-native, not just a crop) for narrow ones.
+// 768 matches Tailwind's own 'md' breakpoint, which the rest of this
+// component (and the design system generally) already treats as the
+// desktop/mobile line.
+const MOBILE_BREAKPOINT = 768
+const HERO_FRAMES_DESKTOP_DIR = '/hero-frames'
+const HERO_FRAMES_MOBILE_DIR = '/hero-frames-mobile'
+const FRAME_PATH = (baseDir: string, index: number) =>
+  `${baseDir}/frame${String(index + 1).padStart(4, '0')}.webp`
 
 // Caps how many frame requests are in flight at once, matching a typical
 // browser's per-origin connection limit — dispatching all 120 at once would
@@ -26,9 +35,9 @@ const MAX_CONCURRENT_LOADS = 6
 
 // Tiny (32px-wide, ~270 byte) blurred still of frame 1, inlined so it paints
 // with zero network round-trip — covers the section's own background the
-// instant it mounts, before FIRST_FRAME itself has had a chance to load.
-// On a slow/throttled connection FIRST_FRAME can take seconds to arrive,
-// and until it does there was nothing between the raw dark section
+// instant it mounts, before the real first frame has had a chance to load.
+// On a slow/throttled connection that real request can take seconds to
+// arrive, and until it does there was nothing between the raw dark section
 // background and the viewer — this closes that gap unconditionally,
 // regardless of how long the rest of the sequence takes to load.
 const PLACEHOLDER_DATA_URI =
@@ -149,6 +158,14 @@ export default function ScrollHero() {
   // Computed once per mount, not reactive to a live OS-setting change mid
   // session — matches the same convention useScrollReveal already follows.
   const reduceMotion = useRef(prefersReducedMotion()).current
+  // Same convention: checked once on mount, not on resize/orientation
+  // change. A live viewport-crossing mid-session would mean tearing down
+  // and re-fetching an entirely different 4.4MB frame set out from under a
+  // user who may already be mid-scrub — worse than just picking the set
+  // that matched the viewport at load time and leaving it there.
+  const isMobileViewport = useRef(window.innerWidth < MOBILE_BREAKPOINT).current
+  const frameBaseDir = isMobileViewport ? HERO_FRAMES_MOBILE_DIR : HERO_FRAMES_DESKTOP_DIR
+  const firstFrame = FRAME_PATH(frameBaseDir, 0)
 
   // If the exact requested frame isn't loaded yet (scrolled ahead of the
   // progressive queue), fall back to the nearest frame that IS loaded
@@ -251,8 +268,12 @@ export default function ScrollHero() {
         refreshToward(frameIndexForProgress(latestProgressRef.current))
         onSettled()
       }
-      img.onerror = onSettled
-      img.src = FRAME_PATH(index)
+      img.onerror = () => {
+        // TEMP-DEBUG: remove once the ?debug=1 mobile investigation is done.
+        console.error(`[ScrollHero] frame failed to load: ${img.src}`)
+        onSettled()
+      }
+      img.src = FRAME_PATH(frameBaseDir, index)
     }
 
     dispatchNext()
@@ -332,6 +353,13 @@ export default function ScrollHero() {
     // of relying on ScrollTrigger's onEnter for it.
     let prevProgress = 0
 
+    // TEMP-DEBUG block — remove once the ?debug=1 mobile investigation is
+    // done. Rolling per-second onUpdate call count, logged once a second
+    // during active scroll, to catch jerkiness/rate anomalies on-device via
+    // Eruda's console (see index.html).
+    let __updateCount = 0
+    let __updateWindowStart = performance.now()
+
     const ctx = gsap.context(() => {
       // Hidden up front so there's no flash of the next section before the
       // first scroll update runs — mirrors useScrollReveal's own initial
@@ -375,7 +403,27 @@ export default function ScrollHero() {
         // instead detected below, from real progress deltas.
         onLeave: revealHeader,
         onEnterBack: revealHeader,
+        // TEMP-DEBUG: catches ScrollTrigger recalculating pin/trigger
+        // bounds — e.g. a mobile address-bar show/hide slipping past
+        // ignoreMobileResize, or a real orientation change — mid-session.
+        // Remove once the ?debug=1 mobile investigation is done.
+        onRefresh: (self) => {
+          console.log(
+            `[ScrollHero] ScrollTrigger refreshed: start=${Math.round(self.start)} end=${Math.round(self.end)} innerWidth=${window.innerWidth} innerHeight=${window.innerHeight}`
+          )
+        },
         onUpdate: (self) => {
+          // TEMP-DEBUG: remove once the ?debug=1 mobile investigation is done.
+          __updateCount++
+          const __now = performance.now()
+          if (__now - __updateWindowStart >= 1000) {
+            console.log(
+              `[ScrollHero] onUpdate rate: ${(__updateCount / ((__now - __updateWindowStart) / 1000)).toFixed(1)}/s`
+            )
+            __updateCount = 0
+            __updateWindowStart = __now
+          }
+
           const progress = self.progress
           latestProgressRef.current = progress
 
@@ -425,7 +473,7 @@ export default function ScrollHero() {
           the gap on a slow connection, since it needs no network round-trip
           at all. */}
       <img
-        src={FIRST_FRAME}
+        src={firstFrame}
         alt=""
         className="absolute inset-0 h-full w-full object-cover"
         loading="eager"
