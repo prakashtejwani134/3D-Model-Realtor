@@ -151,11 +151,6 @@ export default function ScrollHero() {
   const framesRef = useRef<(HTMLImageElement | undefined)[]>([])
   const loadedRef = useRef<Set<number>>(new Set())
   const currentFrameRef = useRef(0)
-  // TEMP-DEBUG: tracks which frame indices have ever been drawn, so
-  // drawFrame can single out and time only the FIRST draw of each frame —
-  // part of the img.decode() investigation below. Remove alongside that
-  // timing log once confirmed.
-  const drawnOnceRef = useRef<Set<number>>(new Set())
   // Latest scroll progress, updated on every onUpdate tick — read by the
   // frame loader to figure out which not-yet-requested frame is currently
   // closest to the user, so it can keep reprioritizing the load queue as
@@ -198,20 +193,7 @@ export default function ScrollHero() {
     if (!img || !img.complete || img.naturalWidth === 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
-    // TEMP-DEBUG: times only the first-ever drawImage of each frame index,
-    // to confirm/refute the hypothesis that an undecoded image forces a
-    // synchronous decode on its first draw. Remove once confirmed either way.
-    if (!drawnOnceRef.current.has(resolved)) {
-      const __t0 = performance.now()
-      drawCover(ctx, img, canvas.width, canvas.height)
-      const __dt = performance.now() - __t0
-      console.log(`[ScrollHero] first drawImage of frame ${resolved}: ${__dt.toFixed(1)}ms`)
-      drawnOnceRef.current.add(resolved)
-    } else {
-      drawCover(ctx, img, canvas.width, canvas.height)
-    }
-
+    drawCover(ctx, img, canvas.width, canvas.height)
     currentFrameRef.current = resolved
   }
 
@@ -404,6 +386,40 @@ export default function ScrollHero() {
     // Eruda's console (see index.html).
     let __updateCount = 0
     let __updateWindowStart = performance.now()
+    // One-time marker for the first onUpdate tick where progress crosses
+    // into phase 2, so long-task/memory timing can be correlated against
+    // "did the freeze happen right as the reveal fade kicked in."
+    let __loggedRevealStart = false
+    // Throttles performance.memory logging to roughly once every 2s,
+    // independent of onUpdate's own (much higher) call rate.
+    let __lastMemoryLogTime = 0
+
+    // TEMP-DEBUG: flags every long task (>50ms of blocked main-thread time)
+    // the browser reports anywhere on the page during this component's
+    // lifetime, not just ones we can attribute to our own code — this is
+    // the ground truth for "did something actually stall the main thread,"
+    // independent of our own theories about what's causing it. 'longtask'
+    // isn't supported everywhere (notably not in Safari), so this is
+    // feature-detected and silently skipped where it isn't.
+    let __longtaskObserver: PerformanceObserver | undefined
+    if (typeof PerformanceObserver !== 'undefined') {
+      try {
+        __longtaskObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const attribution = (entry as PerformanceEntry & { attribution?: unknown[] }).attribution
+            const attributionInfo = attribution?.length
+              ? attribution.map((a) => JSON.stringify(a)).join(', ')
+              : 'none'
+            console.log(
+              `[ScrollHero] longtask: duration=${entry.duration.toFixed(1)}ms startTime=${entry.startTime.toFixed(1)} attribution=${attributionInfo}`
+            )
+          }
+        })
+        __longtaskObserver.observe({ entryTypes: ['longtask'] })
+      } catch {
+        // 'longtask' entryType unsupported (e.g. Safari) — nothing to do.
+      }
+    }
 
     const ctx = gsap.context(() => {
       // Hidden up front so there's no flash of the next section before the
@@ -472,6 +488,27 @@ export default function ScrollHero() {
           const progress = self.progress
           latestProgressRef.current = progress
 
+          // TEMP-DEBUG: one-shot marker for entering phase 2, to correlate
+          // against longtask/memory timing — "did the freeze happen right
+          // as this fired."
+          if (!__loggedRevealStart && progress > REVEAL_START) {
+            __loggedRevealStart = true
+            console.log(`[ScrollHero] crossed REVEAL_START at progress=${progress.toFixed(4)}`)
+          }
+
+          // TEMP-DEBUG: performance.memory is Chrome-only (incl. Chrome on
+          // Android, which is what matters here) — a sudden climb in
+          // usedJSHeapSize right before a freeze would point at GC pressure
+          // from something allocating heavily at that moment (e.g. the
+          // gsap.set calls below, or style recalculation) rather than at
+          // decode/paint work.
+          const __memory = (performance as Performance & { memory?: { usedJSHeapSize: number } })
+            .memory
+          if (__memory && performance.now() - __lastMemoryLogTime >= 2000) {
+            __lastMemoryLogTime = performance.now()
+            console.log(`[ScrollHero] usedJSHeapSize: ${(__memory.usedJSHeapSize / 1048576).toFixed(1)}MB`)
+          }
+
           if (prevProgress <= HEADER_HIDE_EPSILON && progress > HEADER_HIDE_EPSILON) {
             hideHeader()
           }
@@ -496,6 +533,7 @@ export default function ScrollHero() {
 
     return () => {
       ctx.revert()
+      __longtaskObserver?.disconnect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
