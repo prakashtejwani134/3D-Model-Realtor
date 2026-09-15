@@ -130,7 +130,9 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dw: num
  * wherever the user has scrolled to *now* (frameIndexForProgress of
  * latestProgressRef) — so the load order continuously re-targets itself
  * toward the user's actual position instead of marching through the
- * sequence in a fixed order they may have already scrolled past.
+ * sequence in a fixed order they may have already scrolled past. Each
+ * frame is also decoded (img.decode()) before being marked loaded, not
+ * just fetched — see the comment at the onload handler for why.
  *
  * Pinned full-viewport for PIN_SCROLL_VH_MULTIPLIER * 100vh of scroll,
  * split into two phases (see onUpdate below): the frame sequence scrubs to
@@ -149,6 +151,11 @@ export default function ScrollHero() {
   const framesRef = useRef<(HTMLImageElement | undefined)[]>([])
   const loadedRef = useRef<Set<number>>(new Set())
   const currentFrameRef = useRef(0)
+  // TEMP-DEBUG: tracks which frame indices have ever been drawn, so
+  // drawFrame can single out and time only the FIRST draw of each frame —
+  // part of the img.decode() investigation below. Remove alongside that
+  // timing log once confirmed.
+  const drawnOnceRef = useRef<Set<number>>(new Set())
   // Latest scroll progress, updated on every onUpdate tick — read by the
   // frame loader to figure out which not-yet-requested frame is currently
   // closest to the user, so it can keep reprioritizing the load queue as
@@ -191,7 +198,20 @@ export default function ScrollHero() {
     if (!img || !img.complete || img.naturalWidth === 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    drawCover(ctx, img, canvas.width, canvas.height)
+
+    // TEMP-DEBUG: times only the first-ever drawImage of each frame index,
+    // to confirm/refute the hypothesis that an undecoded image forces a
+    // synchronous decode on its first draw. Remove once confirmed either way.
+    if (!drawnOnceRef.current.has(resolved)) {
+      const __t0 = performance.now()
+      drawCover(ctx, img, canvas.width, canvas.height)
+      const __dt = performance.now() - __t0
+      console.log(`[ScrollHero] first drawImage of frame ${resolved}: ${__dt.toFixed(1)}ms`)
+      drawnOnceRef.current.add(resolved)
+    } else {
+      drawCover(ctx, img, canvas.width, canvas.height)
+    }
+
     currentFrameRef.current = resolved
   }
 
@@ -264,9 +284,34 @@ export default function ScrollHero() {
       }
       img.onload = () => {
         if (cancelled) return
-        loadedRef.current.add(index)
-        refreshToward(frameIndexForProgress(latestProgressRef.current))
-        onSettled()
+        const markLoaded = () => {
+          if (cancelled) return
+          loadedRef.current.add(index)
+          refreshToward(frameIndexForProgress(latestProgressRef.current))
+          onSettled()
+        }
+        // Decodes off the synchronous drawImage() path: without this, the
+        // browser defers each frame's actual pixel decode until its first
+        // drawImage() call, which on lower-powered devices can stall the
+        // main thread for 100ms+ — landing exactly when scrolling into a
+        // never-before-drawn frame range. Doing it here instead spreads
+        // that cost across however long the network took to deliver the
+        // frame (already staggered by the priority queue above), so by the
+        // time this frame is actually due to be drawn its decoded bitmap
+        // is ready and drawImage() is cheap. Deliberately left inside the
+        // same activeCount/dispatchNext gate as the network fetch itself
+        // (via onSettled, below) rather than firing-and-forgetting the
+        // decode — on a device where decoding is the real bottleneck, that
+        // naturally back-pressures the load queue to match, instead of
+        // letting MAX_CONCURRENT_LOADS decodes pile up at once.
+        if (typeof img.decode === 'function') {
+          img.decode().then(markLoaded).catch(markLoaded)
+        } else {
+          // No decode() (very old Safari/WebViews) — falls back to the
+          // previous synchronous-on-first-draw behavior, still strictly
+          // better than not loading the frame at all.
+          markLoaded()
+        }
       }
       img.onerror = () => {
         // TEMP-DEBUG: remove once the ?debug=1 mobile investigation is done.
